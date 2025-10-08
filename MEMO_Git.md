@@ -15,6 +15,7 @@ core.editorの値を`"code --wait"`に設定で、コミット時にVSCode起動
 | ls -a | 内容すべて表示 |
 | git config --list | .gitconfig内の各設定値の確認 |
 | git config --global _<設定項目>_ _<設定値>_ | 項目の設定 |
+| git remote -v | 対応するリモートリポジトリの確認。<br>デフォルトではoriginと名前がついてる。 |
 |  |  |
 | git init | カレントでローカルリポジトリ作成 |
 | git add _<ファイル名>_ | ステージングエリアへ登録 |
@@ -37,3 +38,14 @@ core.editorの値を`"code --wait"`に設定で、コミット時にVSCode起動
 
 さまざまなプログラム言語・ツールのための.gitignoreファイルのテンプレート<br>
 https://github.com/github/gitignore
+
+フォークとクローンの違い
+
+- フォーク・・自分のGitHub上（＝リモートリポジトリ）にコピーされる。  
+　　方法：GitHubのWeb上からForkボタンを操作。
+- クローン・・自分のPC（＝ローカルリポジトリ）にコピーされる。  
+　　方法：コマンド`git clone git@github.com:ReoTokeshi/ichiyasaGitSample.git`
+
+他人のリポジトリを修正して提案したい（プルリク送りたい）ときは、  
+<u>**フォーク → クローン → 修正 → プッシュ → プルリクエスト**</u>
+
