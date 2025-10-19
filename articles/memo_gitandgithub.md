@@ -1,3 +1,10 @@
+---
+title: "Git&GitHub 学習メモ"
+emoji: "☕"
+type: "tech"
+topics: ["Git", "GitHub"]
+published: true
+---
 
 ルートディレクトリ `C:\Program Files\Git`<br>
 　⇒GitBash起動時のカレント<br>

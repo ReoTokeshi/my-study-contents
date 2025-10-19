@@ -1,12 +1,18 @@
-
+---
+title: "JavaSilver SE17 学習メモ"
+emoji: "☕"
+type: "tech"
+topics: ["Java"]
+published: true
+---
 - クラスのメンバ変数の初期化
 
 インスタンス変数(staticなし)の場合、  
-　finalあり：メンバ宣言時かコンストラクタで初期化必須（自動初期化されない）。  
-　finalなし：初期化は任意。インスタンス生成時に初期値に自動初期化あり。  
+　finalあり：自動初期化されないので初期化必須。（メンバ宣言時かコンストラクタかstatic初期化子）  
+　finalなし：初期化は任意。インスタンス生成時にデフォルト値に自動初期化あり。  
 クラス変数(staticあり)の場合、  
-　finalあり：メンバ宣言時かstatic初期化子で初期化必須（自動初期化されない）。  
-　finalなし：初期化は任意。クラスロード時に初期値に自動初期化あり。
+　finalあり：自動初期化されないので初期化必須。（メンバ宣言時かstatic初期化子）  
+　finalなし：初期化は任意。クラスロード時にデフォルト値に自動初期化あり。
 
 - <u>参照変数経由以外</u>での同じクラス内のメソッドの呼び方まとめ
 
@@ -153,6 +159,7 @@ Stringオブジェクトはイミュータブルなので、文字列操作の�
 | endsWith(String suffix) | true／falseを返す。引数にchar型はダメ |
 | startsWith(String prefix)<br>startsWith(String prefix, int toffset) | true／falseを返す。引数にchar型はダメ。<br>開始位置を指定可能 |
 | concat(String str) | 文字列を末尾に連結 |
+| valueOf(Object obj)<br>valueOf(char data[]) | valueOf(null)を呼ぶとより引数が具体的な(char[] data)の方が呼ばれ、NPE発生する。valueOf((Object)null)とすると"null"が作られる。 |
 |  |  |
 
 ## ３章　演算子と条件分岐
@@ -275,7 +282,8 @@ defaultとcaseの記載順は関係なく、上から順に評価実行されて
 break書かないと、<u>一致したcaseから下まですべて実行される（フォールスルー）</u>。  
 `->`使えば、一致したcaseだけ実行されるのでbreak文が不要。
 
-switch()内に指定できるのはbyte、short、int、char、String、enum(試験外)と、該当のラッパークラスのみ(longやfloat、doubleはダメ)。null指定すると例外NullPointerException。  
+switch()内に指定できるのはbyte、short、int、char、String、enum(試験外)と、該当のラッパークラスのみ(longやfloat、doubleはダメ)。  
+null直接指定はコンパイルエラー。nullの変数を指定すると例外NullPointerException。  
 
 case値は定数のみOK。nullはダメ。変数の場合はコンパイル時定数※であればOK
 （※finalで宣言と同時に初期化）  
@@ -328,11 +336,11 @@ do-while()`;`を書き忘れたらコンパイルエラー。
 ## ５章　クラスの宣言とインスタンス化
 
 可変長引数はメソッドに１つだけ、最後に記載する。  
-必ず型の直後に...をつける。`int num...`はダメ。
+必ず型の直後に...をつける`int... num`。（int num...はダメ）
 
 （紫本　5.3　メソッドの呼び出し優先度）  
-オーバーロードしている場合、以下の優先度で呼ばれるメソッドが決まる。  
-①完全一致  
+オーバーロードしている場合、指定した実引数により以下の優先度で呼ばれるメソッドが決まる。  
+①データ型完全一致  
 ②基本データ型の暗黙の型変換  
 ③基本データ型とラッパークラスのオートボクシング／アウトボクシング  
 ④可変長引数  
@@ -344,8 +352,8 @@ do-while()`;`を書き忘れたらコンパイルエラー。
 ②`void method(int y, int... y) {}`
 
 - コンストラクタ  
-コンストラクタに指定するアクセス修飾子はなんでもOK。
-クラスのアクセス修飾子と同じでなくてもOK。
+コンストラクタに指定するアクセス修飾子はなんでもOK。クラスのアクセス修飾子と同じでなくてもOK。  
+（例えばprivateのコンストラクタを定義して、メソッド経由でしかインスタンス化できないようにしたりできる）
 
 - static初期化子  
 クラス内に`static { }`を記載すると、<U>クラスロード時（クラスを使用したタイミング）</U>に処理される。  
@@ -386,7 +394,7 @@ staticフィールドの初期化などに使える。
 親と子で<u>staticかそうでないかが異なっていたり</u>すると定義不可。  
 
 コンストラクタ内で別のコンストラクタ呼ぶとき、最初の行でかつsuper(…)かthis(…)どちらか１回呼べる。両方は呼べない。<br>
-this(…)のときは必ず別のコンストラクタ。自分自身を呼ぶとコンパイルエラー。
+this(…)のときは必ず別のコンストラクタ。自分自身を呼ぶとコンパイルエラー（コンパイル時に検出されるのでStackOverflowErrorではない）。
 
 ### インタフェース
 
@@ -458,7 +466,8 @@ permitsにレコードクラス指定不可（レコードクラスはクラス�
 参照先が同じ（同一）か、または各コンポーネント値が全部同じであればtrue。
 
 コンストラクタについて。  
-アクセス修飾子は、レコード定義と同じかより緩いものを指定する。  
+<u>アクセス修飾子は、レコード定義と同じかより緩いものを指定する。</u>  
+(通常クラスは自由につけられることに注意！)  
 自動追加される標準コンストラクタのほか、明示的に書くコンストラクタは２種類。
 
 - **代替コンストラクタ**  
@@ -474,6 +483,9 @@ return使用不可（初期化されないままインスタンス化されて�
 ### パターンマッチング
 
 パターン変数のスコープは<u>**パターンに確実にマッチする範囲**</u>（ローカル変数とは異なる）。マッチしていることが確定していれば｛｝外でもOK。`if(obj instanceof String s && `<u>`s.length == 3`</u>`) {}`みたいな短絡評価(ショートサーキット)での使い方でも、評価時にマッチ確定しているのでOK（この場合&や||だとNG）。
+
+対象がnullだと確定でfalseを返す。  
+`Object s = null; if(s instanceof String str) { }` ←false
 
 ---
 
@@ -603,6 +615,31 @@ close() の中で例外が発生した場合でも、他のリソースのclose(
 
 ### ★　主な例外クラスメモ
 
-IndexOutOfBoundsException・・・範囲外を参照したときの例外総括。<u>リストの場合はこれ。</u>  
-　　ArrayIndexOutOfBoundsException・・・配列の例外  
-　　StringIndexOutOfBoundsException・・・文字列の例外  
+```
+java.lang.Object
+   └── java.lang.Throwable
+        ├── java.lang.Error                // JVMやシステムの重大なエラー
+        │     ├── VirtualMachineError
+        │     │     ├── OutOfMemoryError
+        │     │     └── StackOverflowError
+        │     └── AssertionError
+        │
+        └── java.lang.Exception            // アプリケーションが処理すべき例外
+              ├── java.lang.RuntimeException   // 非チェック例外（Unchecked）
+              │     ├── NullPointerException
+              │     ├── IllegalArgumentException
+              │     │      └── NumberFormatException
+              │     ├── IllegalStateException
+              │     └── IndexOutOfBoundsException   // リスト
+              │            ├── ArrayIndexOutOfBoundsException   // 配列
+              │            └── StringIndexOutOfBoundsException   // 文字列
+              │
+              ├── IOException                  // チェック例外（Checked）
+              │     ├── FileNotFoundException
+              │     └── EOFException
+              │
+              ├── SQLException
+              ├── ClassNotFoundException
+              ├── InterruptedException
+              └── ParseException
+```

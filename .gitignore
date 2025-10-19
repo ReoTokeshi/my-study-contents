@@ -1,0 +1,21 @@
+# Node.js / npm 関連
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Zenn プレビュー用ビルドキャッシュ
+.cache/
+.zenn-preview-cache/
+.zenn-preview/
+
+# macOS / Windows の自動ファイル
+.DS_Store
+Thumbs.db
+
+# エディタ系
+.vscode/
+.idea/
+
+# その他一時ファイル
+*.log
+*.tmp
