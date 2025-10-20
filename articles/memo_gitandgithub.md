@@ -4,6 +4,7 @@ emoji: "☕"
 type: "tech"
 topics: ["Git", "GitHub"]
 published: true
+slug: memo_gitandgithub
 ---
 
 ルートディレクトリ `C:\Program Files\Git`<br>
