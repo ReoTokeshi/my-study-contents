@@ -542,9 +542,12 @@ removeメソッドで要素を削除すると、<u>後ろの要素が繰り上�
 拡張for中でのremoveメソッドの動き注意(カーソルは動かない)。  
 特に削除後、後ろの要素を読み込むと例外ConcurrentModificationException発生。
 
+主なメソッドと、戻り値のメモ↓
+
 |メソッド定義|内容|
 | ---- | ---- |
 | boolean add(E e) | trueを返す |
+| void add(int index, E element) | **位置指定した場合は戻り値なし！** |
 | E remove(int idx) | 削除した要素を返す |
 | boolean remove(Object o) | trueを返す(消す要素内容は指定してるからね) |
 | E set(int idx, E e) | 置き換え前の要素を返す |
@@ -559,7 +562,7 @@ removeメソッドで要素を削除すると、<u>後ろの要素が繰り上�
 - HashMap
 
 ・Key-Valueで管理。Keyは重複不可。  
-・要素追加するメソッドはput（addではない！）  
+・**要素追加するメソッドはput（addではない！）**  
 ・toString()は{DE=Germany, UK=United Kingdom, FR=France}のように出力。順不同。
 
 |メソッド定義|内容|
