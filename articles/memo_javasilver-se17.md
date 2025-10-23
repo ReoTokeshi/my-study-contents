@@ -119,9 +119,10 @@ StringBuilderには等価性を判断するequals()は用意されてないの�
 
 | メソッド | メモ |
 | --- | --- |
-| StringBuilder delete(int start, int end) | 開始位置、終了位置を指定。 |
-| StringBuilder reverse() | 反転する。元の文字列が変化する。 |
-| String substring(int start, int end) | 元のオブジェクトは変更されない。String型変数に代入して使う。 |
+| delete(int start, int end) | 開始位置、終了位置を指定。 |
+| reverse() | 反転する。元の文字列が変化する。 |
+| substring(int start, int end) | 元のオブジェクトは変更されない。String型変数に代入して使う。 |
+| replace(int start, int end, String str) | Stringクラスとは違って、開始終了を指定（対象文字列の引数指定なし） |
 | ・・・ |  |
 | ・・・ |  |
 |  |  |
@@ -150,6 +151,7 @@ Stringオブジェクトはイミュータブルなので、文字列操作の�
 
 | メソッド | メモ |
 | --- | --- |
+| indexOf(String str, int fromIndex) | 位置指定したら、それ以降で出現した場所を返す。 |
 | replace(char oldChar, char newChar)<br>replace(CharSequence target, CharSequence replacement) | 文字列の最後まで置換する。<br>引数の型の組合せとして(char, char)か(String, String)はOK。<u>`replace("aa", 'b')`とかはダメ</u> |
 | replaseAll(String regex, String replacement) | 正規表現OKバージョン。単純な置換はreplaceを使う。 |
 | length() | <u>半角も全角も１文字カウント</u> |
@@ -158,6 +160,7 @@ Stringオブジェクトはイミュータブルなので、文字列操作の�
 | concat(String str) | 文字列を末尾に連結 |
 | valueOf(Object obj)<br>valueOf(char data[]) | valueOf(null)を呼ぶとより引数が具体的な(char[] data)の方が呼ばれ、NPE発生する。valueOf((Object)null)とすると"null"が作られる。 |
 | compareTo(String anotherString) | 辞書順比較。等しければ0、引数の文字列より小さい場合は負、大きい場合は正。 |
+| toString() | すでに文字列なので、`return this;`となっており自分自身の参照を返す（新オブジェクトは作らない）。 |
 |  |  |
 
 ## ３章　演算子と条件分岐
