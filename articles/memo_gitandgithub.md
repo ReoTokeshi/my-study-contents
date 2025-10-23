@@ -8,8 +8,8 @@ slug: memo_gitandgithub
 ---
 
 ルートディレクトリ `C:\Program Files\Git`<br>
-　⇒GitBash起動時のカレント<br>
-ホームディレクトリ `C:\Users\81808`
+　⇒GitBash起動時のカレント（インストールフォルダ）<br>
+ホームディレクトリ `C:\Users\(PCユーザ名)`
 
 デフォルトブランチ名 `main`<br>
 　⇒git configのinit.fefaultBranchで確認＆設定
@@ -52,7 +52,7 @@ https://github.com/github/gitignore
 - フォーク・・自分のGitHub上（＝リモートリポジトリ）にコピーされる。  
 　　方法：GitHubのWeb上からForkボタンを操作。
 - クローン・・自分のPC（＝ローカルリポジトリ）にコピーされる。  
-　　方法：コマンド`git clone git@github.com:ReoTokeshi/ichiyasaGitSample.git`
+　　方法：コマンド`git clone git@github.com:(GitHubユーザ名)/ichiyasaGitSample.git`
 
 他人のリポジトリを修正して提案したい（プルリク送りたい）ときは、  
 <u>**フォーク → クローン → 修正 → プッシュ → プルリクエスト**</u>
