@@ -119,10 +119,13 @@ System.out.println("-- Stack -- " + stack); // -- Stack -- [B, Second, First, A,
 Setは重複NG。nullはHashSet、LinkedHashSetでは1個だけ入る。TreeSetはだめ（例外発生）。  
 ArrayDequeクラスもnull要素禁止。追加(offerとかadd)しようとするとNullPointer発生。  
 
-Tree○○の要素はComparableインタフェースの実装必須。してないとClassCastException発生。
+Tree～の要素はComparableインタフェースの実装必須。してないとClassCastException発生。
 
 of()で作ったコレクションはいかなる変更も不可。  
 Arrays.asList()で作ったリストは固定サイズの配列。つまり要素変更は可能、サイズ変更は不可。
+
+MapはIterableを実装していないので、独自のforEach(**BiConsumer**)を持つ。  
+もしくはMapのentrySetのforEach使えばOK。
 
 ## ２章　関数型インタフェースとラムダ式
 
@@ -191,55 +194,10 @@ java.util.streamパッケージ。
 | --- | --- |
 | dropWhile(Predicate) | trueの間、スキップして捨てる |
 | takeWhile(Predicate) | trueの間、取得する |
-| range(int, int) |<u>第２引数の数値-1まで</u>のIntStreamを生成 |
-| rangeClosed(int, int) |<u>第２引数の数値を含む</u>IntStreamを生成 |
-|  |  |
-
-【map】  
-・1→1変換  
-・戻り値は値  
-・例：map(x -> x * 2)  
-
-【flatMap】  
-・1→0以上へ変換  
-・戻り値はStream  
-・各Streamを連結する  
-・例：flatMap(str -> Arrays.stream(str.split(",")))  
-　イメージ  
-　要素 → Stream生成 → 連結  
-
-【mapMulti】  
-・1→0以上へ変換  
-・戻り値なし  
-・Consumer.accept()で要素を流す  
-・Streamを生成しない  
-・flatMapより効率が良い場合がある  
-・例：  
-```
-mapMulti((x,c)->{
-    c.accept(...);
-})
-```
-　イメージ
-　要素 → accept(); accept(); …  
-
-### 終端操作　リダクション（集約）
-
-
-■Stream<T>インタフェース
-| メソッド | メモ |
-| --- | --- |
-| Optional max(Comparator) | getで最大要素を取得 |
-| long count() | 全ストリームで戻り値long |
-
-■特殊化ストリーム
-| メソッド | メモ |
-| --- | --- |
-| OptionalInt IntStream.min() | getAsIntで最小値取得 |
-| OptionalDouble IntStream.average() | 全特殊化ストリームで戻り値OptionalDouble。getAsDoubleで平均値取得 |
-| int IntStream.sum() | 戻り値の型は特殊化ストリームの基本データ型（DoubleStreamだったらdouble） |
-|  |  |
-（min()やaverage()がOptional系なのは要素が空の可能性があるから）
+| range(int, int) |<u>第２引数の数値-1まで</u>のIntStreamを生成。整数（Int、Long）だけ！DoubleStreamにはない |
+| rangeClosed(int, int) |<u>第２引数の数値を含む</u>IntStreamを生成。整数（Int、Long）だけ！DoubleStreamにはない |
+| generate(Supplier) | 無限ストリームの生成。 |
+| iterate(T, UnaryOperator)、iterate(T, Predicate, UnaryOperator)  | 無限ストリームの生成。for文みたいに使える |
 
 ・特殊化ストリーム間での型変換
 | メソッド | メモ |
@@ -256,9 +214,59 @@ mapMulti((x,c)->{
 | static comparingInt(ToIntFunction) | ストリーム要素の数値型の中身の基準を指定 |
 | comp1.thenComparing(comp2) | comp1で並べ替え、次にcomp2で並べ替え |
 
-mapMulti(BiConsumer)  
-1要素→0～複数要素へ変換  
-flatMapより中間Listを作らない
+【map】  
+・1→1変換  
+・戻り値は値  
+・例：map(x -> x * 2)  
+
+【flatMap(Function<T, Stream\<R>>)】  
+・1→0以上へ変換  
+・戻り値はStream  
+・各Streamを連結する  
+・例：flatMap(str -> Arrays.stream(str.split(",")))  
+　イメージ  
+　要素 → Stream生成 → 連結  
+
+【mapMulti(BiConsumer<T, Consumer\<R>>)】  
+・1→0以上へ変換  
+・**戻り値なし**  
+・Consumer.accept()で要素を流す  
+・途中でStreamを生成しないのでflatMapより効率が良い場合がある  
+・例：  
+```
+mapMulti((x,c)->{
+    c.accept(...);
+})
+```
+　イメージ
+　要素 → accept(); accept(); …  
+
+### 終端操作　リダクション（集約）
+
+■Stream<T>インタフェース
+| メソッド | メモ |
+| --- | --- |
+| Optional max(Comparator) | getで最大要素を取得 |
+| long count() | 全ストリームで戻り値long |
+| reduce |  |
+| collect |  |
+
+■特殊化ストリーム
+| メソッド | メモ |
+| --- | --- |
+| OptionalInt IntStream.min() | getAsIntで最小値取得 |
+| OptionalDouble IntStream.average() | 全特殊化ストリームで戻り値OptionalDouble。getAsDoubleで平均値取得 |
+| int IntStream.sum() | 戻り値の型は特殊化ストリームの基本データ型（DoubleStreamだったらdouble） |
+|  |  |
+（min()やaverage()がOptional系なのは要素が空の可能性があるから）
+
+■Collectorsクラスのファクトリメソッド
+| メソッド | メモ |
+| --- | --- |
+| toList(), toSet(), toCollection(Supplier) | 変更可能なコレクションを返す |
+| toMap(Function, Function), toMap(Function, Function, BinaryOperator), toMap(Function, Function, BinaryOperator, Supplier) | マップにして返す。第３引数はキー重複時の操作。第４引数は具体的なマップオブジェクトを指定できる |
+| groupingBy | Map<key, List<T>>で返すか、Map<key, D>もある(Dはcountなど集計) |
+| pratitionBy | yesかnoで２分割する。Map<Boolean, List<T>>か、Map<Boolean, D>もある(Dはcountなど集計) |
 
 ## ４章　モジュールシステム
 
@@ -420,3 +428,8 @@ onSubscribeにrequest(1)を書かなかったら、submitしてもなにも受�
 
 request(n)
 → n個受け取る要求
+
+## 見ておく資料
+
+java クラスOptional<T>
+https://docs.oracle.com/javase/jp/11/docs/api/java.base/java/util/Optional.html
