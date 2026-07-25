@@ -313,6 +313,7 @@ requires：依存する「モジュール名」を指定。
 | -summary(または-s) | 依存関係を簡略表示 |
 | -verbose, -verbose:class, -verbose:package | すべてのクラスレベルの依存関係。verbose(冗長)で覚える |
 | -dotoutput (フォルダ名) | 指定したパスのjarの分析結果を(フォルダ名)に、各jarのdotファイルとsummary.dotファイルとして作成する。-summaryオプション付きだとsummary.dotのみ作成。 |
+|  |  |
 
 ■モジュールの種類  
 
@@ -337,11 +338,30 @@ requires：依存する「モジュール名」を指定。
 　・すべてのパッケージをexport  
 　・jarファイル名(例「foo-bar-1.0.1.jar」→「foo.bar」)か、MANIFEST.MFのAutoMatic-Module-Name属性の指定値で名前が自動でつけられる
 
-
-
 ■カスタムランタイムイメージ  
 必要な機能だけを詰め込んだ軽量なJava実行環境を自分で作れる仕組み。  
-jlink コマンドで作成。
+`jlink [オプション] --module-path モジュールパス --add-modules モジュール名 --output 出力先`  
+例：`jlink --module-path mlib --add-modules client --output image\clientapp`みたいに使う。そしたらimage\clientappにbinフォルダができて、その中のjava.exeでjavaコマンド使えば、必要最小限の構成でモジュール実行できる。
+
+| オプション | メモ |
+| --- | --- |
+| --launcher コマンド名=モジュール名/クラス名 | 独自の起動コマンドを作成 |
+| --compress=0か1か2 | 圧縮レベル指定 |
+|  |  |
+
+### java.util.ServiceLoader
+サービス（インターフェース）と、その実装（プロバイダ）を分離して利用する仕組み。  
+
+提供側のjarのMETA-INF/services/(使用インターフェースAPI名)のファイル内に、提供する実装クラス名を書けば、利用者側からServiceLoader\<S>で読み込める。  
+利用者側：  
+`ServiceLoader<Greeting> loader = ServiceLoader.load(Greeting.class);`  
+`for(Greeting obj : loader) { obj.hello(); }`  
+みたいに使う。ServiceLoaderはIterableを実装しているので拡張for文が使えて、提供される実装クラスをすべて取り出して使用できる。
+
+module-info.javaがあれば  
+提供側：`provides (インターフェース名) with (実装クラス), (実装クラス), …`  
+利用側：`requiers (利用モジュール名) uses (インターフェース名)`  
+で使える。
 
 ## ５章　並列処理
 
