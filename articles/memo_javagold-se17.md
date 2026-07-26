@@ -24,14 +24,24 @@ slug: memo_javagold-se17
 OKなケース
 
 - 配列は参照型なので、\<int[]>とかはOK。
-- 
 
 ・ワイルドカードについて  
 
+**！！重要！！**  
+ワイルドカードは新しい型を作り出すわけではない。すでに存在する型を汎用的に受け取るためのもの。なので、ジェネリック定義側に?は使えない！  
+`public class Human<? extends Number> { }` ←結局何型か分からないからここには使えない！ジェネリックメソッドも同じ。
+
+**！！重要！！**  
+`super`は<u>ワイルドカード付きでしか使えない</u>。そしてワイルドカードはジェネリック定義側には使えない。つまり`<T super Number>`これはNG。Numberの親クラスがどんな動作を持ってるかわからないため。
+
+例：  
+`Box<? super Number> box;`  
+⇒なんの型かは分からないけど、Box\<Object>もBox\<Number>も参照できる型。Box\<T>の実際のTは実体による。
+
 変数宣言時の型にワイルドカード使用可能。ただし  
 インスタンス生成側は具体的な型を指定する必要あるので使用不可！  
-'Queue<? super Number> queue = new ArrayDeque<? super Number>();' ⇒NG
-'Queue<? super Number> queue = new ArrayDeque<>();' ⇒これはOK  
+`Queue<? super Number> queue = new ArrayDeque<? super Number>();` ⇒NG  
+`Queue<? super Number> queue = new ArrayDeque<>();` ⇒これはOK  
 
 **PECS (Producer Extends, Consumer Super)** の考え方 
 
@@ -41,16 +51,26 @@ OKなケース
 |? super T|Tとそのサブクラス|Object|
 ||||
 
-例： 
-・'<? extends Number>'で宣言した場合  
-⇒実際の中身がIntegerなのかDoubleなのか判断できないのでコンパイル時点で追加を許可しない。  
-⇒実際の中身がNumber以下であることは確定しているため、取り出しはNumberで受けられる。  
-・'<? super Number>'で宣言した場合  
-⇒実際の中身がNumber以上であることが確定しているため、Number以下の追加は可能。  
-⇒実際の中身がNumberなのかObjectなのか判断できないので、取り出しはObjectでのみ受けられる。  
+詳細： 
+- `<? extends Number>`で宣言した場合  
+・実際の中身がIntegerなのかDoubleなのかその他サブクラスなのかコンパイル時点で判断できないので型安全のために追加を許可しない。  
+・実際の中身がNumber以下であることは確定しているため、取り出しはNumberで受けられる。
+```java
+List<? extends Number> list = new ArrayList<Integer>();
+list.add(10); list.add(11L); list.add(22.1F); //←addした時点でコンパイルエラー
+```
+
+- `<? super Number>`で宣言した場合  
+・実際の中身がNumber以上であることが確定しているため、Number以下の追加は可能。  
+・実際の中身がNumberなのかObjectなのか判断できないので、<u>取り出しはObjectでのみ受けられる</u>。  
+```java
+List<? super Number> list = new ArrayList<Object>();
+list.add(10); list.add(11L); list.add(22.1F); //←addした時点でコンパイルエラー
+```
+
 
 ◆ジェネリックメソッド  
-・`public static <E> void bar() { }`の順番（戻り値の前）。  
+・`public static <E> void bar() { }`の順番（ジェネリクスは戻り値の前）。  
 ・呼び出し側での型指定方法は、  
 `obj.<Integer>foo();`や`List<Integer> list1 = obj.foo();`（obj.<>foo()はダメ）でOK。
 
