@@ -45,10 +45,11 @@ OKなケース
 
 **PECS (Producer Extends, Consumer Super)** の考え方 
 
-|宣言|コレクションに追加できるもの|取り出せる型|
+|宣言|追加できるもの|取り出せる型|
 |--|--|--|
-|? extends T|基本的に追加できない（null以外）|T|
-|? super T|Tとそのサブクラス|Object|
+|非境界：<?>|null以外追加できない|Object|
+|上限境界：<? extends T>|null以外追加できない|T|
+|下限境界：<? super T>|Tとそのサブクラス|Object|
 ||||
 
 詳細： 
@@ -123,6 +124,10 @@ Iterable <<interface>>
 | Deque\<E> | E getFirst, getLast | 取得。失敗時はNoSuchElementException |
 | Queue\<E> | E element | 取得。失敗時はNoSuchElementException |
 | Deque\<E> | E peekFirst, peekLast | 取得。失敗時はnull |
+| Map<K, V> | static entry(key, value) | Entryペア１個分作る。**作ったEntryは変更不可** |
+| Map<K, V> | static ofEntries(…) | 引数のEntryペアからMapを作る。**作ったMapは変更不可** |
+|  |  |
+|  |  |
 
 Dequeに対して両端キューとスタック（後入れ先出し）の操作可能。
 ```java
@@ -208,7 +213,20 @@ Consumerはaccept, Predicateはtest, Supplierはget, Functionはapply
 
 ## ３章　JavaストリームAPI
 
+Optionalのファクトリメソッドは３つ覚える（公開されたコンストラクタはないのでnewはできない）。  
+値の取得系でOptional\<T>が返ってくるのはor(Supplier)のみ(メソッドチェーンみたいに使う用)。ほかは値Tそのまま返ってくる  
+
+| メソッド | メモ |
+| --- | --- |
+| static empty() | 空のOptionalを返す |
+| static of(T) | 生成。nullだとヌルポ |
+| ofNullable(T) | 生成。nullだと空 |
+|  |  |
+
 java.util.streamパッケージ。
+
+**コレクションのstream()はCollectionインタフェースのdefaultメソッドなのでMapは持っていない！**  
+Mapで使うならkeySetとかentrySetなどしてからstream()する。
 
 | メソッド | メモ |
 | --- | --- |
@@ -501,6 +519,338 @@ onSubscribeにrequest(1)を書かなかったら、submitしてもなにも受�
 
 request(n)
 → n個受け取る要求
+
+## ６章　ファイルI／O
+
+java.ioパッケージの基底（抽象）クラス  
+InputStream, OutputStreamなど、Streamがつくとバイトストリーム  
+Reader, Writerなどがつくとキャラクタストリーム  
+
+**ノードストリーム**は単体で使うもの、**フィルタストリーム**はノードストリームと組み合わせて使うもの
+
+基本的にストリームはリソースのclose()が必要だが、AutoCloseable実装してたらtry-with-resources文の使用可能。Outputはファイルがなければ新規作成するものならOutputのほうから先に書く。  
+
+FileOutputStreamはflushしなくてもwriteした時点で書かれる（オブジェクトにバッファ持たず、その場でOSに書き込み依頼する）。  
+バッファを持つストリームではtry-with-resources使った場合、flush()しなくてもclose()されたら書き込まれる。
+
+FileReaderのread()の戻り値はint型。なぜならread()はEOFの場合に-1返すけどcharだと0~65535で-1を返せないから、仕様！なので結果を(char)cのようにキャストする。
+
+フィルタストリーム（BufferedReader／BufferedWriterなど）の引数でバイトストリーム⇔キャラクタストリームはできないので、橋渡しのInputStreamReader／OutputStreamWriterクラスを使う。  
+・キャラクタ⇒バイト  
+`BufferedReader br = new BufferedReader(new InputStreamReader(System.in));`
+
+・Consoleクラス  
+Consoleクラスはコンストラクタprivateなのでnewできない。System.console()を使う。
+ConsoleのreadLineはStringを戻すけど、readPasswordはchar[]を戻す（セキュリティ上の理由。Stringはイミュータブルなのでメモリ上に残り続ける可能性があるため）。
+```
+Console console = System.console();
+String id = console.readLine("Enter yout ID     :");
+char[] pass = console.readPassword("Enter your password     :");
+Arrays.fill(pass, ' '); //←使い終わったらメモリ内容を消す
+```
+### データの書式設定
+
+■ format()/printf() 書式指示子  
+
+| 書式 | 意味 | 例 |
+|------|------|----|
+| `%s` | 文字列 | `printf("%s", "Java");` → `Java`  |
+| `%d` | 整数 | `printf("%d", 123);` → `123`  |
+| `%f` | 小数 | `printf("%f", 3.14);` → `3.140000`<br>（デフォルトで小数点以下６桁）  |
+| `%.2f` | 小数2桁 | `printf("%.2f", 3.14159);` → `3.14`  |
+| `%c` | 文字 | `printf("%c", 'A');` → `A`  |
+| `%b` | 真偽値 | `printf("%b", true);` → `true`  |
+| `%n` | 改行 | `printf("A%nB");` → `A`<br>`B`  |
+| `%%` | `%`を表示 | `printf("100%%");` → `100%`  |
+
+幅指定
+
+| 書式 | 意味 | 例 |
+|------|------|----|
+| `%5d` | 右寄せ（幅5） | `printf("%5d", 12);` → `"   12"`  |
+| `%-5d` | 左寄せ（幅5） | `printf("%-5d!", 12);` → `"12   !"`  |
+| `%05d` | 0埋め | `printf("%05d", 12);` → `00012`  |
+
+### シリアライズ
+
+オブジェクトのシリアライズは、  
+・インスタンス変数が対象。static変数は対象外  
+・`transient`を指定するとシリアライズ対象外  
+・メソッドはデータじゃないので対象外  
+・<u>変数が参照型の場合は、そのクラスもSeriarizableインタフェース実装必要</u>
+
+<u>ObjectInputStreamは、書き込まれた順にreadObject()する必要あり！</u>  
+あとClassNotFoundException投げるので例外処理が必要。
+
+### ストリームの分類
+
+|分類|抽象クラス|代表クラス|ノード/フィルタ|用途|
+|---|---|---|---|---|
+|バイト入力|InputStream|FileInputStream|ノード|バイト読込|
+|バイト入力|InputStream|BufferedInputStream|フィルタ|高速化|
+|バイト入力|InputStream|ObjectInputStream|フィルタ|オブジェクト読込|
+|バイト文字変換|Reader|InputStreamReader|フィルタ|バイト→文字変換|
+|文字入力|Reader|FileReader|ノード|文字読込|
+|文字入力|Reader|BufferedReader|フィルタ|高速化・readLine()|
+|バイト出力|OutputStream|FileOutputStream|ノード|バイト書込|
+|バイト出力|OutputStream|BufferedOutputStream|フィルタ|高速化|
+|バイト出力|OutputStream|ObjectOutputStream|フィルタ|オブジェクト保存|
+|文字出力|Writer|FileWriter|ノード|文字書込|
+|文字出力|Writer|BufferedWriter|フィルタ|高速化|
+|文字出力|Writer|PrintWriter|フィルタ|printf(), print(), println()|
+
+---
+
+### FileReader と BufferedReader
+
+|クラス|メソッド|戻り値|
+|---|---|---|
+|FileReader|read()|int|
+|BufferedReader|read()|int|
+|BufferedReader|readLine()|String|
+
+#### FileReader の read()
+
+```java
+int c;
+
+while((c = fr.read()) != -1){
+    System.out.print((char)c);
+}
+```
+
+- `read()` は **int型** を返す
+- EOFを **-1** で表すため
+- 文字として扱うには **(char)キャスト** が必要
+
+---
+
+### バイトストリームと文字ストリーム
+
+|種類|扱う単位|用途|
+|---|---|---|
+|InputStream / OutputStream|byte|画像・PDF・動画など|
+|Reader / Writer|char|テキスト|
+
+---
+
+### flush()
+
+|クラス|flush()|
+|---|---|
+|BufferedWriter|○|
+|BufferedOutputStream|○|
+|ObjectOutputStream|○|
+|PrintWriter|○|
+|FileOutputStream|×（バッファを持たない）|
+
+- flush()：バッファ内のデータを強制的に書き込む
+- close() は必要なら内部で flush() を実行する
+
+---
+
+### Consoleクラス
+
+|メソッド|戻り値|エコー|
+|---|---|---|
+|readLine()|String|入力文字を表示|
+|readPassword()|char[]|**常に非表示**|
+
+ポイント
+
+- `readPassword()` はエコーのON/OFFを切り替えられない
+- 常に入力文字は表示されない
+
+---
+
+### Path
+
+#### 作成
+
+```java
+Path p = Paths.get("sample.txt");
+```
+
+---
+
+#### 主なメソッド
+
+|メソッド|説明|
+|---|---|
+|getFileName()|最後の名前要素|
+|getParent()|親パス|
+|getRoot()|ルート要素（例：`C:\`、`/`）|
+|getName(int)|ルートを除いた指定インデックスの要素|
+|resolve()|パス結合|
+|relativize()|相対パス生成|
+|normalize()|`.` `..` を整理|
+|toAbsolutePath()|絶対パス|
+
+#### getRoot()
+
+```text
+C:\Users\Java
+```
+
+↓
+
+```text
+C:\
+```
+
+UNIX
+
+```text
+/usr/local
+```
+
+↓
+
+```text
+/
+```
+
+ルート要素を持たない相対パスなら **null** を返す。
+
+---
+
+#### getName(int)
+
+```text
+C:\Users\Java\sample.txt
+```
+
+|index|結果|
+|---|---|
+|0|Users|
+|1|Java|
+|2|sample.txt|
+
+※ルート要素(C:\)は含まれない
+
+---
+
+### FileSystem
+
+|メソッド|static|
+|---|---|
+|getPath()|×|
+
+取得例
+
+```java
+FileSystem fs = FileSystems.getDefault();
+Path p = fs.getPath("sample.txt");
+```
+
+---
+
+### Filesクラス
+
+#### 主なメソッド
+
+|メソッド|戻り値|
+|---|---|
+|exists()|boolean|
+|notExists()|boolean|
+|createFile()|Path|
+|createDirectory()|Path|
+|copy()|Path|
+|move()|Path|
+|delete()|void|
+|deleteIfExists()|boolean|
+|readAllLines()|List<String>|
+|write()|Path|
+|walk()|Stream<Path>|
+
+---
+
+#### StandardCopyOption
+
+|定数|copy()|move()|
+|---|---|---|
+|REPLACE_EXISTING|○|○|
+|COPY_ATTRIBUTES|○|×|
+|ATOMIC_MOVE|×|○|
+
+---
+
+### Filesクラスの主な例外
+
+|メソッド|主な例外|
+|---|---|
+|createFile()|FileAlreadyExistsException|
+|createDirectory()|FileAlreadyExistsException|
+|copy()|FileAlreadyExistsException|
+|move()|FileAlreadyExistsException|
+|delete()|NoSuchFileException、DirectoryNotEmptyException|
+
+ポイント
+
+- `delete()` の戻り値は **void**
+- 削除できなければ例外
+- `deleteIfExists()` は boolean を返す
+
+---
+
+### シリアライズ
+
+|項目|内容|
+|---|---|
+|Serializable|シリアライズ可能にするマーカーインターフェース|
+|ObjectOutputStream|writeObject()|
+|ObjectInputStream|readObject()|
+|transient|シリアライズ対象外|
+|static|シリアライズ対象外|
+|serialVersionUID|クラスバージョン管理|
+
+---
+
+#### getBytes()
+
+```java
+byte[] b = "abcd".getBytes();
+```
+
+結果
+
+```text
+{97, 98, 99, 100}
+```
+
+文字コードに従って byte[] に変換される。
+
+---
+
+#### Files.walk()
+
+- ディレクトリを**深さ優先探索**する
+- 戻り値：`Stream<Path>`
+
+---
+
+#### シンボリックリンク
+
+- 別ファイル・別ディレクトリへのリンク
+- Windowsのショートカットより実体に近い存在
+
+---
+
+### 試験頻出
+
+- ノードストリームとフィルタストリーム
+- 抽象クラス（InputStream / OutputStream / Reader / Writer）
+- FileReader は read() のみ
+- BufferedReader は readLine() が使える
+- read() は int を返し char キャストが必要
+- Console.readPassword() は char[]・常にエコーなし
+- Path#getRoot() はルート要素がなければ null
+- getName(int) はルートを除いた要素
+- FileSystem#getPath() はインスタンスメソッド
+- StandardCopyOption の適用先
+- delete() は void、失敗時は例外
+- Serializable / transient / serialVersionUID
+
 
 ## 見ておく資料
 
