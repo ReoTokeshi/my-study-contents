@@ -633,7 +633,7 @@ ConsoleのreadLineはStringを戻すけど、readPasswordはchar[]を戻す（�
 Console console = System.console();
 String id = console.readLine("Enter yout ID     :");
 char[] pass = console.readPassword("Enter your password     :");
-Arrays.fill(pass, ` `); //←使い終わったらメモリ内容を消す
+Arrays.fill(pass, ' '); //←使い終わったらメモリ内容を消す
 ```
 ### データの書式設定
 
@@ -645,7 +645,7 @@ Arrays.fill(pass, ` `); //←使い終わったらメモリ内容を消す
 | `%d` | 整数 | `printf("%d", 123);` → `123`  |
 | `%f` | 小数 | `printf("%f", 3.14);` → `3.140000`<br>（デフォルトで小数点以下６桁）  |
 | `%.2f` | 小数2桁 | `printf("%.2f", 3.14159);` → `3.14`  |
-| `%c` | 文字 | `printf("%c", `A`);` → `A`  |
+| `%c` | 文字 | `printf("%c", 'A');` → `A`  |
 | `%b` | 真偽値 | `printf("%b", true);` → `true`  |
 | `%n` | 改行 | `printf("A%nB");` → `A`<br>`B`  |
 | `%%` | `%`を表示 | `printf("100%%");` → `100%`  |
