@@ -442,12 +442,12 @@ module-info.javaがあれば
 | | |
 
 ### 排他制御
-'[修飾子] synchronized 戻り値の型 メソッド名() {}'  
-'synchronized (ロックを提供するオブジェクト) {}'  
-'[修飾子] static synchronized 戻り値の型 メソッド名() {}'  
-'synchronized (StaticSample.class) {}'  （staticメソッド内）
+`[修飾子] synchronized 戻り値の型 メソッド名() {}`  
+`synchronized (ロックを提供するオブジェクト) {}`  
+`[修飾子] static synchronized 戻り値の型 メソッド名() {}`  
+`synchronized (StaticSample.class) {}`  （staticメソッド内）
 
-'ThreadLocalRandom.current().nextLong(5)'  
+`ThreadLocalRandom.current().nextLong(5)`  
 現在のスレッドで乱数を生成するクラス。  
 current()でThreadLocalRandomのオブジェクト生成、0以上5未満の long 型の乱数を返す。
 
@@ -487,7 +487,7 @@ Objectクラスのメソッド↓
 ### Executorフレームワーク
 
 ・Executorインタフェース  
-実行は'void execute(Runnable command)'を呼ぶ。
+実行は`void execute(Runnable command)`を呼ぶ。
 
 ・ExecutorServiceインタフェース  
 
@@ -499,7 +499,7 @@ Objectクラスのメソッド↓
 | shutdownNow() | タスク受付終了、受付済タスクの**中止を試みる(interrupt)**←割り込みを検知しない処理whileとかは止まらない |
 | boolean awaitTermination(long, TimeUnit) **InterruptedException例外処理必須** | シャットダウン要求後、待機 |
 
-●'Future<?> submit(Runnable task)'と'<T> Future<T> submit(Callable<T> task)'の違い  
+●`Future<?> submit(Runnable task)`と`<T> Future<T> submit(Callable<T> task)`の違い  
 Runnable run()は戻り値がなしなのでFutureから取得できる結果もない。何か型はあるけど気にしなくていい、という意味で<?>。  
 Callable call()は戻り値ありなので引数の型パラメータ<T>に応じて、戻り値のFuture<T>型パラメータも同じ型になる。
 
@@ -633,7 +633,7 @@ ConsoleのreadLineはStringを戻すけど、readPasswordはchar[]を戻す（�
 Console console = System.console();
 String id = console.readLine("Enter yout ID     :");
 char[] pass = console.readPassword("Enter your password     :");
-Arrays.fill(pass, ' '); //←使い終わったらメモリ内容を消す
+Arrays.fill(pass, ` `); //←使い終わったらメモリ内容を消す
 ```
 ### データの書式設定
 
@@ -645,7 +645,7 @@ Arrays.fill(pass, ' '); //←使い終わったらメモリ内容を消す
 | `%d` | 整数 | `printf("%d", 123);` → `123`  |
 | `%f` | 小数 | `printf("%f", 3.14);` → `3.140000`<br>（デフォルトで小数点以下６桁）  |
 | `%.2f` | 小数2桁 | `printf("%.2f", 3.14159);` → `3.14`  |
-| `%c` | 文字 | `printf("%c", 'A');` → `A`  |
+| `%c` | 文字 | `printf("%c", `A`);` → `A`  |
 | `%b` | 真偽値 | `printf("%b", true);` → `true`  |
 | `%n` | 改行 | `printf("A%nB");` → `A`<br>`B`  |
 | `%%` | `%`を表示 | `printf("100%%");` → `100%`  |
