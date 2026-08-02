@@ -287,7 +287,7 @@ mapMulti((x,c)->{
 | Optional max(Comparator) | getで最大要素を取得 |
 | long count() | 全ストリームで戻り値long |
 | reduce |  |
-| collect |  |
+| collect(Collector), <br>collect(Supplier, BiConsumer, BiConsumer) | 可変リダクション |
 
 ■特殊化ストリーム
 | メソッド | メモ |
@@ -299,12 +299,27 @@ mapMulti((x,c)->{
 （min()やaverage()がOptional系なのは要素が空の可能性があるから）
 
 ■Collectorsクラスのファクトリメソッド
+
+collect(Collector)の中に書くメソッド。staticで、戻り値はCollector型。
+
 | メソッド | メモ |
 | --- | --- |
 | toList(), toSet(), toCollection(Supplier) | 変更可能なコレクションを返す |
 | toMap(Function, Function), toMap(Function, Function, BinaryOperator), toMap(Function, Function, BinaryOperator, Supplier) | マップにして返す。第３引数はキー重複時の操作。第４引数は具体的なマップオブジェクトを指定できる |
 | groupingBy | Map<key, List<T>>で返すか、Map<key, D>もある(Dはcountなど集計) |
 | pratitionBy | yesかnoで２分割する。Map<Boolean, List<T>>か、Map<Boolean, D>もある(Dはcountなど集計) |
+
+また、Collectorインタフェースの実装クラスを作ってcollectに入れることで独自のリダクションも可能（ただしあまり使われない？）。  
+以下メソッドのオーバーライド必須。
+
+| メソッド名（戻り値型） | 役割 |
+|---|---|
+| `Supplier<A> supplier()` | 結果を格納するための空のコンテナ（入れ物）を生成する |
+| `BiConsumer<A, T> accumulator()` | Streamの要素を1つずつコンテナに追加する処理を定義する |
+| `BinaryOperator<A> combiner()` | 並列Streamで分割された複数のコンテナの結果を結合する処理を定義する |
+| `Function<A, R> finisher()` | 最終的な結果型へ変換する処理を定義する |
+| `Set<Collector.Characteristics> characteristics()` | Collectorの特性（並列処理可能か、finisher不要かなど）を返す |
+|  |  |
 
 ## ４章　モジュールシステム
 
@@ -522,26 +537,85 @@ request(n)
 
 ## ６章　ファイルI／O
 
+### ストリームの分類
+
+|分類|抽象クラス|代表クラス|ノード/フィルタ|用途|
+|---|---|---|---|---|
+|バイト入力|InputStream|FileInputStream|ノード|バイト読込|
+|バイト入力|InputStream|BufferedInputStream|フィルタ|高速化|
+|バイト入力|InputStream|ObjectInputStream|フィルタ|オブジェクト読込|
+|バイト出力|OutputStream|FileOutputStream|ノード|バイト書込|
+|バイト出力|OutputStream|BufferedOutputStream|フィルタ|高速化|
+|バイト出力|OutputStream|ObjectOutputStream|フィルタ|オブジェクト保存|
+|バイト文字変換|Reader|InputStreamReader|フィルタ|バイト→文字変換|
+|文字入力|Reader|FileReader|ノード|文字読込|
+|文字入力|Reader|BufferedReader|フィルタ|高速化・readLine()|
+|文字出力|Writer|FileWriter|ノード|文字書込|
+|文字出力|Writer|BufferedWriter|フィルタ|高速化|
+|文字出力|Writer|PrintWriter|フィルタ|printf(), print(), println()|
+
 java.ioパッケージの基底（抽象）クラス  
 InputStream, OutputStreamなど、Streamがつくとバイトストリーム  
 Reader, Writerなどがつくとキャラクタストリーム  
 
-**ノードストリーム**は単体で使うもの、**フィルタストリーム**はノードストリームと組み合わせて使うもの
+**ノードストリーム**は単体で使うもの、**フィルタストリーム**はノードストリームと組み合わせて使うもの。  
+ノードストリームはFileInput(Output)Stream, FileReader(Writer)だけ覚える。他はだいたいフィルタストリーム  
+Object～はバイトストリームだけ(InputStream, OutputStream)。
 
 基本的にストリームはリソースのclose()が必要だが、AutoCloseable実装してたらtry-with-resources文の使用可能。Outputはファイルがなければ新規作成するものならOutputのほうから先に書く。  
 
-FileOutputStreamはflushしなくてもwriteした時点で書かれる（オブジェクトにバッファ持たず、その場でOSに書き込み依頼する）。  
-バッファを持つストリームではtry-with-resources使った場合、flush()しなくてもclose()されたら書き込まれる。
+#### getBytes()
+
+```java
+byte[] b = "abcd".getBytes();
+```
+
+結果
+
+```text
+{97, 98, 99, 100}
+```
+
+文字コードに従って byte[] に変換される。
+
+### FileReader と BufferedReader
+
+|クラス|メソッド|戻り値|
+|---|---|---|
+|FileReader|read()|int|
+|BufferedReader|read()|int|
+|BufferedReader|readLine()|String|
 
 FileReaderのread()の戻り値はint型。なぜならread()はEOFの場合に-1返すけどcharだと0~65535で-1を返せないから、仕様！なので結果を(char)cのようにキャストする。
+
+```java
+int c;
+
+while((c = fr.read()) != -1){
+    System.out.print((char)c);
+}
+```
+
+FileOutputStreamはflushしなくてもwriteした時点で書かれる（オブジェクトにバッファ持たず、その場でOSに書き込み依頼する）。  
+バッファを持つストリームではtry-with-resources使った場合、flush()しなくてもclose()されたら書き込まれる。
 
 フィルタストリーム（BufferedReader／BufferedWriterなど）の引数でバイトストリーム⇔キャラクタストリームはできないので、橋渡しのInputStreamReader／OutputStreamWriterクラスを使う。  
 ・キャラクタ⇒バイト  
 `BufferedReader br = new BufferedReader(new InputStreamReader(System.in));`
 
-・Consoleクラス  
+### Consoleクラス  
+
+|メソッド|戻り値|エコー|
+|---|---|---|
+|readLine()|String|入力文字を表示|
+|readPassword()|char[]|**常に非表示**|
+
 Consoleクラスはコンストラクタprivateなのでnewできない。System.console()を使う。
 ConsoleのreadLineはStringを戻すけど、readPasswordはchar[]を戻す（セキュリティ上の理由。Stringはイミュータブルなのでメモリ上に残り続ける可能性があるため）。
+
+`readPassword()` はエコーのON/OFFを切り替えられないので常に入力文字は表示されない！
+
+
 ```
 Console console = System.console();
 String id = console.readLine("Enter yout ID     :");
@@ -579,156 +653,35 @@ Arrays.fill(pass, ' '); //←使い終わったらメモリ内容を消す
 ・メソッドはデータじゃないので対象外  
 ・<u>変数が参照型の場合は、そのクラスもSeriarizableインタフェース実装必要</u>
 
+レコードクラスのコンポーネントはfinalなので、シリアライズ・デシリアライズ時のreadObject, whiteObjectは定義しても使われない。  
+・シリアライズ時はそのときの状態（コンポーネント）で書き込まれる  
+・デシリアライズ時は標準コンストラクタが呼ばれる
+
 <u>ObjectInputStreamは、書き込まれた順にreadObject()する必要あり！</u>  
 あとClassNotFoundException投げるので例外処理が必要。
 
-### ストリームの分類
-
-|分類|抽象クラス|代表クラス|ノード/フィルタ|用途|
-|---|---|---|---|---|
-|バイト入力|InputStream|FileInputStream|ノード|バイト読込|
-|バイト入力|InputStream|BufferedInputStream|フィルタ|高速化|
-|バイト入力|InputStream|ObjectInputStream|フィルタ|オブジェクト読込|
-|バイト文字変換|Reader|InputStreamReader|フィルタ|バイト→文字変換|
-|文字入力|Reader|FileReader|ノード|文字読込|
-|文字入力|Reader|BufferedReader|フィルタ|高速化・readLine()|
-|バイト出力|OutputStream|FileOutputStream|ノード|バイト書込|
-|バイト出力|OutputStream|BufferedOutputStream|フィルタ|高速化|
-|バイト出力|OutputStream|ObjectOutputStream|フィルタ|オブジェクト保存|
-|文字出力|Writer|FileWriter|ノード|文字書込|
-|文字出力|Writer|BufferedWriter|フィルタ|高速化|
-|文字出力|Writer|PrintWriter|フィルタ|printf(), print(), println()|
-
----
-
-### FileReader と BufferedReader
-
-|クラス|メソッド|戻り値|
-|---|---|---|
-|FileReader|read()|int|
-|BufferedReader|read()|int|
-|BufferedReader|readLine()|String|
-
-#### FileReader の read()
-
-```java
-int c;
-
-while((c = fr.read()) != -1){
-    System.out.print((char)c);
-}
-```
-
-- `read()` は **int型** を返す
-- EOFを **-1** で表すため
-- 文字として扱うには **(char)キャスト** が必要
-
----
-
-### バイトストリームと文字ストリーム
-
-|種類|扱う単位|用途|
-|---|---|---|
-|InputStream / OutputStream|byte|画像・PDF・動画など|
-|Reader / Writer|char|テキスト|
-
----
-
-### flush()
-
-|クラス|flush()|
-|---|---|
-|BufferedWriter|○|
-|BufferedOutputStream|○|
-|ObjectOutputStream|○|
-|PrintWriter|○|
-|FileOutputStream|×（バッファを持たない）|
-
-- flush()：バッファ内のデータを強制的に書き込む
-- close() は必要なら内部で flush() を実行する
-
----
-
-### Consoleクラス
-
-|メソッド|戻り値|エコー|
-|---|---|---|
-|readLine()|String|入力文字を表示|
-|readPassword()|char[]|**常に非表示**|
-
-ポイント
-
-- `readPassword()` はエコーのON/OFFを切り替えられない
-- 常に入力文字は表示されない
-
----
-
-### Path
+### Pathインタフェース、Pathsクラス
 
 #### 作成
 
 ```java
-Path p = Paths.get("sample.txt");
+Path p = Paths.get("sample1.txt");
+Path p = Path.of("sample2.txt");
 ```
-
----
 
 #### 主なメソッド
 
 |メソッド|説明|
 |---|---|
-|getFileName()|最後の名前要素|
-|getParent()|親パス|
-|getRoot()|ルート要素（例：`C:\`、`/`）|
-|getName(int)|ルートを除いた指定インデックスの要素|
-|resolve()|パス結合|
+|getFileName()|最後の名前要素（ファイルかディレクトリ）|
+|getParent()|親パス。親を持たないパス(ルートか相対パス)なら null を返す！|
+|getRoot()|ルート要素を返す（例：`C:\`、`/`）<br>ルート要素を持たない相対パスなら null を返す！|
+|getName(int)|<u>ルートを除いた</u>指定インデックスの要素|
+|resolve(Path), resolve(String)|単純にパスを結合。引数が絶対パスなら引数のPathを返す|
+|resolveSibling(Path), resolveSibling(String)|<u>親要素に</u>引数のパスを結合。引数が絶対パスなら引数のPathを返す|
 |relativize()|相対パス生成|
-|normalize()|`.` `..` を整理|
+|normalize()|冗長化を排除　`.` `..` を整理する！|
 |toAbsolutePath()|絶対パス|
-
-#### getRoot()
-
-```text
-C:\Users\Java
-```
-
-↓
-
-```text
-C:\
-```
-
-UNIX
-
-```text
-/usr/local
-```
-
-↓
-
-```text
-/
-```
-
-ルート要素を持たない相対パスなら **null** を返す。
-
----
-
-#### getName(int)
-
-```text
-C:\Users\Java\sample.txt
-```
-
-|index|結果|
-|---|---|
-|0|Users|
-|1|Java|
-|2|sample.txt|
-
-※ルート要素(C:\)は含まれない
-
----
 
 ### FileSystem
 
@@ -743,37 +696,26 @@ FileSystem fs = FileSystems.getDefault();
 Path p = fs.getPath("sample.txt");
 ```
 
----
-
 ### Filesクラス
+
+Filesクラスはstaticメソッドのみ！！
 
 #### 主なメソッド
 
-|メソッド|戻り値|
+|メソッド|メモ|
 |---|---|
-|exists()|boolean|
-|notExists()|boolean|
-|createFile()|Path|
-|createDirectory()|Path|
-|copy()|Path|
-|move()|Path|
-|delete()|void|
-|deleteIfExists()|boolean|
-|readAllLines()|List<String>|
-|write()|Path|
-|walk()|Stream<Path>|
-
----
-
-#### StandardCopyOption
-
-|定数|copy()|move()|
-|---|---|---|
-|REPLACE_EXISTING|○|○|
-|COPY_ATTRIBUTES|○|×|
-|ATOMIC_MOVE|×|○|
-
----
+|Path createDirectories(Path)|ディレクトリを1つ作成（親ディレクトリは自動）|
+|Path createDirectory(Path)|ディレクトリを1つ作成<br>（親ディレクトリは自動作成しない。ないとNoSuchFileException）|
+|Path createFile(Path)|空ファイルを作成|
+|Path copy(Path, Path, オプション)|ファイル・ディレクトリをコピー|
+|Path move(Path, Path, オプション)|ファイル・ディレクトリを移動・リネーム|
+|void delete(Path)|ファイル・空ディレクトリを削除。削除できなければ例外|
+|boolean deleteIfExists(Path)|存在すれば削除し、削除したらtrue|
+|List<String> readAllLines(Path)|ファイルの全行を読み込む|
+|Path write(Path, byte[])|バイト配列を書き込む|
+|Stream<Path> walk(Path)|ディレクトリツリーを深さ優先で走査|
+|boolean exists(Path)|ファイル・ディレクトリが存在するかを確認|
+|boolean notExists(Path)|ファイル・ディレクトリが存在しないかを確認|
 
 ### Filesクラスの主な例外
 
@@ -785,71 +727,20 @@ Path p = fs.getPath("sample.txt");
 |move()|FileAlreadyExistsException|
 |delete()|NoSuchFileException、DirectoryNotEmptyException|
 
-ポイント
+#### Filesクラスのファイルツリー探索
 
-- `delete()` の戻り値は **void**
-- 削除できなければ例外
-- `deleteIfExists()` は boolean を返す
-
----
-
-### シリアライズ
-
-|項目|内容|
+|メソッド|メモ|
 |---|---|
-|Serializable|シリアライズ可能にするマーカーインターフェース|
-|ObjectOutputStream|writeObject()|
-|ObjectInputStream|readObject()|
-|transient|シリアライズ対象外|
-|static|シリアライズ対象外|
-|serialVersionUID|クラスバージョン管理|
-
----
-
-#### getBytes()
-
-```java
-byte[] b = "abcd".getBytes();
-```
-
-結果
-
-```text
-{97, 98, 99, 100}
-```
-
-文字コードに従って byte[] に変換される。
-
----
-
-#### Files.walk()
-
-- ディレクトリを**深さ優先探索**する
-- 戻り値：`Stream<Path>`
-
----
+|Stream<Path> list(Path)|<u>指定フォルダ直下のみ探索</u>|
+|Stream<Path> find(Path, int, BiPredicate<Path, BasicFileAttributes>)|条件に一致するファイル・ディレクトリを探索する。walk() + 条件判定のような処理|
+|Stream<Path> walk(Path, FileVisitOption...)|指定したパスを起点にファイルツリーを探索する。**深さ優先探索**。ファイル・ディレクトリ両方を対象にする。シンボリックリンクを辿るなどの探索オプションを指定できる|
+|Stream<Path> walk(Path, int, FileVisitOption...)|探索の最大深度を指定|
+|**Path** walkFileTree(Path, FileVisitor<? super Path>)|再帰的に辿り、みつかったら処理。<br>FileVisitor<T>インタフェースもしくはSimpleFileVisitorクラスを実装して見つかった場合の処理を書く（無名クラスでOK）。|
 
 #### シンボリックリンク
 
 - 別ファイル・別ディレクトリへのリンク
 - Windowsのショートカットより実体に近い存在
-
----
-
-### 試験頻出
-
-- ノードストリームとフィルタストリーム
-- 抽象クラス（InputStream / OutputStream / Reader / Writer）
-- FileReader は read() のみ
-- BufferedReader は readLine() が使える
-- read() は int を返し char キャストが必要
-- Console.readPassword() は char[]・常にエコーなし
-- Path#getRoot() はルート要素がなければ null
-- getName(int) はルートを除いた要素
-- FileSystem#getPath() はインスタンスメソッド
-- StandardCopyOption の適用先
-- delete() は void、失敗時は例外
-- Serializable / transient / serialVersionUID
 
 
 ## 見ておく資料
