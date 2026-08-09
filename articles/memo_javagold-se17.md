@@ -539,7 +539,7 @@ WithFixedDelayは**前回の処理終了時刻を基準**に待機時間を数�
 ### Flow API
 
 Flow.Publisher<T>.subsclibe(Subscriber)  
-呼んだら内部でonSubscribe呼ぶ。パブリッシャーがSubscriberにSubscliption設定する。
+呼んだら内部でonSubscribe呼ぶ。パブリッシャーがSubscriberにSubscliption設定するようにSubscriber側にonSubscribeを定義する。
 
 （参考）　Publisherがsubscribe内のonSubscribe呼び出しで渡すSubscriptionは、Subscriberごとに違うオブジェクト。
 
@@ -547,6 +547,8 @@ onSubscribeにrequest(1)を書かなかったら、submitしてもなにも受�
 
 request(n)
 → n個受け取る要求
+
+publisherが送信submitしてまだ処理されていないデータがあった場合、close()してもonCompleteは呼ばれない！（全部完了してたら呼ばれる）
 
 ## ６章　ファイルI／O
 
@@ -755,7 +757,86 @@ Filesクラスはstaticメソッドのみ！！
 - 別ファイル・別ディレクトリへのリンク
 - Windowsのショートカットより実体に近い存在
 
+## ７章　JDBC
+
+Connectionの生成(DriverManagerクラス)  
+・`static getConnection(url)`  
+・`static getConnection(url, user, pass)`  
+↑引数２つのメソッドはなし
+
+JDBC URLの指定方法  
+`jdbc:derby://localhost:1527/sample`
+
+Statementオブジェクトの生成  
+・`conn.createStatement()` ←SQL実行時に渡すため、<u>生成時は引数なし</u>  
+PreparedStatementオブジェクトの生成  
+・`conn.prepareStatement(sql)` ←<u>生成時にSQL渡す！</u>  
+CallableStatementオブジェクトの生成    
+・`conn.prepareCall(sql)` ←<u>生成時にSQL渡す！</u>  
+
+### Statement
+<u>**１つのStatementオブジェクトが同時に保持できるResultSetは１つのみ。</u>**  
+同じオブジェクトで２回目のexecuteQueryすると、１つ目のResultSetは自動でクローズされる！
+
+### PreparedStatement
+?が全部埋まってない状態でexecuteするとSQLExceptionになる。  
+また、UPDATE文に対してexcecuteQueryするとSQLExceptionになる。
+
+### CallableStatement
+
+ストアドプロシージャの結果の取得は、ResultSetじゃなくて、  
+CallableStatementオブジェクトの`getXxx(パラメータ番号)`を使う！
+
+## ８章　ローカライズ
+
+### Locale
+言語コードは小文字、国コードは大文字！（ja_JP, en_US, …）  
+
+・Localeインスタンスの取得  
+- Locale.getDefault() ⇒デフォルトロケール  
+- Locale.JAPANESE ⇒定数の使用  
+- new Locale(String language), new Locale(String language, String country)  
+⇒コンストラクタ。countryのみのロケールはない！
+ 存在しないコードの場合は、そのまま指定名のロケールになる**（つまり不正なコードチェックしない）**  
+- new Locale.Builder().setLanguage("en").setRegion("US").build()  
+⇒これはチェックしてくれる。存在しないとIllformedLocaleException
+
+### リソースバンドル
+
+命名は、  
+「基底名」「基底名_言語コード」「基底名_言語コード_国コード」  
+のいずれか。<u>**国コードだけ、は無し！**</u>
+
+ListResourceBundleのオーバーライドは、
+**`protected Object[][] getContents()`**
+
+リソースバンドルの検索は、ファイル名の完全一致から、.classファイルから優先される。  
+ファイル内の記載は「キー:値」でも「キー=値」でもOK。
+
+### DateTimeFormatter
+
+DateTimeFormatter.ofLocalizedDate(FormatStyle)  
+⇒ロケールの日付スタイルをもつDateTimeFormatterを取得
+
 ## 見ておく資料
 
-java クラスOptional<T>
-https://docs.oracle.com/javase/jp/11/docs/api/java.base/java/util/Optional.html
+- APIドキュメント
+
+List
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/List.html
+
+Set
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Set.html
+
+Deque
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Deque.html
+
+Map
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Map.html
+
+Comparator
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Comparator.html
+
+Optional
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Optional.html
+
