@@ -175,8 +175,9 @@ MapはIterableを実装していないので、独自のforEach(**BiConsumer**)�
 メソッドの中とかに定義するクラス。  
 シールクラス宣言や、シールクラス指定先は不可。
 修飾子としてabstract／final指定可能。  
-外側ブロックのfinalまたは<u>実質的final※</u>なローカル変数にアクセス可能。  
-（※変数の初期化以降に値が変更されていない変数）
+外側ブロックのfinalまたは<u>実質的final※</u>な**ローカル変数**にアクセス可能。  
+（※変数の初期化以降に値が変更されていない変数）  
+ただし**クラスのフィールドにはアクセス可能**(staticでもOK)。参照したり、書き換えたりもできる。
 
 ◆無名クラス
 一時的に継承したり実装したりするために使える。extendsやimplementsの明示的な記述は不可。  
@@ -344,6 +345,8 @@ requires：依存する「モジュール名」を指定。
 ⇒src直下に各モジュールフォルダがある前提で読み込まれる  
 依存しているモジュールは、-mに指定しなくても自動的にコンパイル対象になる  
 
+非公開のモジュールを一時的に利用したいときは`--add-exports`を使用（基本は利用非推奨）。
+
 ■実行  
 
 `java --module-path out\client --module client/app.Main`  
@@ -447,6 +450,11 @@ module-info.javaがあれば
 `[修飾子] static synchronized 戻り値の型 メソッド名() {}`  
 `synchronized (StaticSample.class) {}`  （staticメソッド内）
 
+synchronizedは**再入可能**。同じスレッドなら、すでに取得しているロックをもう一度取得できる！
+
+あるスレッドから値を更新したとき、別のスレッドから更新後が見えないことがある！確実に見えるようにするにはその変数に`volatile`修飾子をつける！  
+例：`private static volatile boolean running = false;`
+
 `ThreadLocalRandom.current().nextLong(5)`  
 現在のスレッドで乱数を生成するクラス。  
 current()でThreadLocalRandomのオブジェクト生成、0以上5未満の long 型の乱数を返す。
@@ -465,7 +473,7 @@ getAndIncrement
 
 ### 同期制御
 
-Objectクラスのメソッド↓  
+これらはObjectクラスのメソッド↓。ロック対象のオブジェクトに対して呼び出す。  
 | メソッド | メモ |
 | --- | --- |
 | final void notify()| 待機中の１スレッドに解除通知 |
@@ -494,6 +502,7 @@ Objectクラスのメソッド↓
 | メソッド | メモ |
 | --- | --- |
 | Future<?> submit(Runnable task) | タスク送信。正常完了でnullをもつFutureを返す |
+| Future<T> submit(Runnable task, T) | Runnableで値を戻せる |
 | <T> Future<T> submit(Callable<T> task) | タスク送信。結果取得用 |
 | shutdown() | タスク受付終了、受付済タスク**実行** |
 | shutdownNow() | タスク受付終了、受付済タスクの**中止を試みる(interrupt)**←割り込みを検知しない処理whileとかは止まらない |
@@ -530,10 +539,12 @@ WithFixedDelayは**前回の処理終了時刻を基準**に待機時間を数�
 ・Future<T>
 
 未来(Future)に結果が入る箱。esをsubmitした時点で箱を受け取って、get()でタスク完了後のTを受け取る。
+getはExecutionExceptionをスローするため例外処理必須。  
+タスク内でスローされた例外インスタンスは、ExecutionException内に実体が設定されるので、getCause()から取り出しが可能。
 
 | メソッド | メモ |
 | --- | --- |
-| get() | 実行待機してから取得。**いろいろスローするから例外処理必須** |
+| get() | 実行待機してから取得。**InterruptedException, ExecutionExceptionをスローするから例外処理必須** |
 |  |  |
 
 ### Flow API
@@ -593,6 +604,15 @@ byte[] b = "abcd".getBytes();
 
 文字コードに従って byte[] に変換される。
 
+### InputStream
+
+|メソッド|メモ|
+|---|---|
+| int read(byte[]) | 引数のbyte配列の要素数分読み込み。読み込んだバイト数が戻り値、読み込んだ結果は引数の配列に入る。 |
+| byte[] readNBytes(int) | 引数のバイト数分読み込み。結果をbyte配列で返す。 |
+| byte[] readAllBytes() | 残りのバイト数分読み込み。 |
+|  |  |
+
 ### FileReader と BufferedReader
 
 |クラス|メソッド|戻り値|
@@ -637,6 +657,19 @@ String id = console.readLine("Enter yout ID     :");
 char[] pass = console.readPassword("Enter your password     :");
 Arrays.fill(pass, ' '); //←使い終わったらメモリ内容を消す
 ```
+
+### java.util.Scannerクラス 
+
+コンストラクタは２つ覚える  
+new Scanner(InputStream) ⇒FileInputStreamとか渡せる  
+new Scanner(String) ⇒直接文字列を渡せる
+
+|メソッド|メモ|
+|---|---|
+| String next() | 読み込み |
+| boolean hasNext() | 次があるかどうか |
+| Scanner useDelimiter(String pattern) | デリミタを設定。","とか、",\|\n"で複数指定も可能 |
+
 ### データの書式設定
 
 ■ format()/printf() 書式指示子  
@@ -675,6 +708,10 @@ Arrays.fill(pass, ' '); //←使い終わったらメモリ内容を消す
 <u>ObjectInputStreamは、書き込まれた順にreadObject()する必要あり！</u>  
 あとClassNotFoundException投げるので例外処理が必要。
 
+・カスタムシリアライズのメソッド定義  
+`private void writeObject(ObjectOutputStream out) throws IOException`  
+`private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException`  
+
 ### Pathインタフェース、Pathsクラス
 
 #### 作成
@@ -684,7 +721,7 @@ Path p = Paths.get("sample1.txt");
 Path p = Path.of("sample2.txt");
 ```
 
-#### 主なメソッド
+#### Pathインタフェースの主なメソッド
 
 |メソッド|説明|
 |---|---|
@@ -818,6 +855,14 @@ ListResourceBundleのオーバーライドは、
 DateTimeFormatter.ofLocalizedDate(FormatStyle)  
 ⇒ロケールの日付スタイルをもつDateTimeFormatterを取得
 
+FormatStyleはFULL, LONG, MEDIUM, SHORT
+
+### NumberFormat
+
+ファクトリメソッドは引数なしと、ロケール指定がある！  
+引数なしの場合はデフォルトロケールになる。  
+getInstance(), getCurrencyInstance(Locale)など
+
 ## 見ておく資料
 
 - APIドキュメント
@@ -840,3 +885,14 @@ https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Comparator.htm
 Optional
 https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Optional.html
 
+Stream
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/stream/Stream.html
+
+Path
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/nio/file/Path.html
+
+Files
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/nio/file/Files.html
+
+DateTimeFormatter
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/time/format/DateTimeFormatter.html
