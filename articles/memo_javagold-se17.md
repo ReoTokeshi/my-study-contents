@@ -301,6 +301,9 @@ mapMulti((x,c)->{
 
 ■Collectorsクラスのファクトリメソッド
 
+(注意)
+特殊化ストリームのcollectにはCollectors.～は使えない！
+
 collect(Collector)の中に書くメソッド。staticで、戻り値はCollector型。
 
 | メソッド | メモ |
@@ -309,6 +312,9 @@ collect(Collector)の中に書くメソッド。staticで、戻り値はCollecto
 | toMap(Function, Function), toMap(Function, Function, BinaryOperator), toMap(Function, Function, BinaryOperator, Supplier) | マップにして返す。第３引数はキー重複時の操作。第４引数は具体的なマップオブジェクトを指定できる |
 | groupingBy | Map<key, List<T>>で返すか、Map<key, D>もある(Dはcountなど集計) |
 | pratitionBy | yesかnoで２分割する。Map<Boolean, List<T>>か、Map<Boolean, D>もある(Dはcountなど集計) |
+| joining(), joining(区切り文字), joining(区切り文字, 先頭文字, 末尾文字) | ３種類押さえる |
+|  |  |
+|  |  |
 
 また、Collectorインタフェースの実装クラスを作ってcollectに入れることで独自のリダクションも可能（ただしあまり使われない？）。  
 以下メソッドのオーバーライド必須。
@@ -367,7 +373,7 @@ requires：依存する「モジュール名」を指定。
 | --- | --- |
 | オプションなし | パッケージレベルでの依存関係を出力 |
 | -summary(または-s) | 依存関係を簡略表示 |
-| -verbose, -verbose:class, -verbose:package | すべてのクラスレベルの依存関係。verbose(冗長)で覚える |
+| -verbose, -verbose:class, -verbose:package | ただの-vまたは:classだとクラスレベル依存、:packageだとパッケージレベルの依存関係を出力。verbose(冗長) |
 | -dotoutput (フォルダ名) | 指定したパスのjarの分析結果を(フォルダ名)に、各jarのdotファイルとsummary.dotファイルとして作成する。-summaryオプション付きだとsummary.dotのみ作成。 |
 |  |  |
 
@@ -887,6 +893,9 @@ https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Optional.html
 
 Stream
 https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/stream/Stream.html
+
+Collectors
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/stream/Collectors.html
 
 Path
 https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/nio/file/Path.html
