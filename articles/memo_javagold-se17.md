@@ -873,6 +873,9 @@ getInstance(), getCurrencyInstance(Locale)など
 
 - APIドキュメント
 
+Collection
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Collection.html
+
 List
 https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/List.html
 
@@ -884,6 +887,9 @@ https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Deque.html
 
 Map
 https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Map.html
+
+Collections
+https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Collections.html
 
 Comparator
 https://docs.oracle.com/javase/jp/17/docs/api/java.base/java/util/Comparator.html
